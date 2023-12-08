@@ -92,9 +92,6 @@ impl Clyde {
             .as_ref()
             .is_some_and(|message| message.author.id == clyde.id);
 
-        if !(mentions_clyde || replying_to_clyde) {
-            return Ok(());
-        }
 
         let model = session.model();
         let content = format!(
@@ -109,6 +106,10 @@ impl Clyde {
         model.tokenize_special("<|im_end|>\n<|im_start|>assistant\nClyde:", tokens);
         batch.extend(tokens.drain(..), false);
 
+        if !(mentions_clyde || replying_to_clyde) {
+            return Ok(());
+        }
+
         if let Some(logit) = batch.logits_mut().last_mut() {
             *logit = true;
         }
@@ -116,6 +117,23 @@ impl Clyde {
         let start = Instant::now();
 
         loop {
+            let model = session.model();
+            let mut bytes = Vec::new();
+
+            for token in batch.tokens().iter().copied() {
+                if token == 32001 {
+                    bytes.extend_from_slice(b"<|im_start|>");
+                } else if token == 32000 {
+                    bytes.extend_from_slice(b"<|im_end|>");
+                } else {
+                    model.detokenize(Some(token), &mut bytes);
+                }
+
+                bytes.extend_from_slice(format!(" ({token})").as_bytes());
+            }
+
+            tracing::info!("decode: {:?}", String::from_utf8_lossy(&bytes));
+
             session.decode(batch);
 
             let token = session.sample();
@@ -151,7 +169,7 @@ impl Clyde {
             .trim()
             .trim_matches(|character: char| (character as u32) < 32);
 
-        tracing::info!("content={content:?}");
+        tracing::info!("content: {content:?}");
 
         if content.is_empty() {
             return Ok(());

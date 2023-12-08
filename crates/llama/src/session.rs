@@ -83,11 +83,14 @@ impl SessionBatch {
     }
 
     pub fn clear(&mut self) {
-        tracing::debug!("clear tokens");
-
         unsafe {
             sys::bindings_session_batch_clear(self.batch_ptr.as_mut_ptr());
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.clear();
+        self.index = 0;
     }
 
     pub fn len(&self) -> usize {
@@ -95,8 +98,6 @@ impl SessionBatch {
     }
 
     pub fn push(&mut self, token: i32, logit: bool) {
-        tracing::debug!("push {token} (index={}, len={})", self.index, self.len());
-
         unsafe {
             sys::bindings_session_batch_add_token(
                 self.batch_ptr.as_mut_ptr(),

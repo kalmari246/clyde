@@ -569,7 +569,6 @@ version = "0.0.0"
 dependencies = [
  "llama-sys",
  "thiserror",
- "tracing",
 ]
 
 [[package]]

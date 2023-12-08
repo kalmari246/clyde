@@ -16,7 +16,10 @@ twilight-model = { version = "0.15.4", default-features = false }
 twilight-util = { version = "0.15.4", default-features = false, features = ["builder"] }
 
 [profile.release]
+codegen-units = 1
 lto = "thin"
+panic = "abort"
+strip = "symbols"
 
 [workspace]
 members = ["crates/*"]
